@@ -1,0 +1,45 @@
+- hosts: all
+  remote_user: root
+  become: true
+  tasks:
+
+  - name: Update machine
+    apt:
+      upgrade: dist
+
+  - name: Pull from github
+    git:
+      repo: git@github.com:CedricVO/f1api.git
+      version: master
+      dest: /root/f1api
+      update: yes
+      accept_hostkey: yes
+  
+  - name: Install dependencies with NPM install
+    shell:
+      cmd: npm install
+      chdir: /root/f1api/f1website/f1website
+
+  - name: Make production dist
+    shell:
+      cmd: ng build --prod
+      chdir: /root/f1api/f1website/f1website
+    ignore_errors: yes
+
+  - name: Install apache
+    apt:
+      name: apache2
+      state: present
+
+  - name: Copy production build to apache2
+    shell:
+      cmd: cp -R /root/f1api/f1website/f1website/dist/f1website/* /var/www/html/
+    ignore_errors: yes
+
+  - name: Start apache2
+    shell:
+      cmd: service apache2 start
+
+  - name: Reload apache2
+    shell:
+      cmd: service apache2 reload
